@@ -63,7 +63,8 @@ Aviso conocido del tooling: `npm audit` reporta 12 avisos moderados por `glob`/`
 ## Decisiones técnicas
 
 - **Expo y expo-router:** simplifican la preparación y ejecución local. Se parte de la plantilla oficial y se retiran sus demos.
-- **Carpetas por tipo:** `src/app` contiene rutas, `src/api` el acceso HTTP y `src/config` la configuración. Se crean otras carpetas cuando tienen código que alojar.
+- **Organización por feature:** el código específico de Mercado, búsqueda, portfolio y órdenes se agrupa en `src/features/markets`, `search`, `portfolio` y `orders`. Cada feature reúne sus llamadas al endpoint, validación, consultas, cálculos, UI y pruebas para corregir una funcionalidad principalmente en un mismo lugar. Se empieza con archivos directos y se crean carpetas cuando tienen código que alojar.
+- **Código compartido:** `src/app` contiene las rutas de Expo Router, que delegarán en cada feature; `src/api` conserva una única instancia HTTP y alojará la normalización común de errores; `src/config` contiene la configuración. Las features usan este código compartido y no importan detalles internos de otras features. Los componentes se comparten cuando una segunda feature los necesita. Ver [Spec 1a](docs/plans/2026-11-08-spec-1a-estructura-features.md).
 - **axios:** reutiliza transporte, timeout y cancelación. Los headers fijos se configuran en una instancia compartida.
 - **TanStack Query:** gestiona los datos del servidor y se conecta en la raíz con un cliente estable. Las claves, invalidación y políticas se definen junto con cada función.
 - **Zod:** valida la configuración externa y luego permitirá validar las respuestas según el contrato de cada endpoint.
