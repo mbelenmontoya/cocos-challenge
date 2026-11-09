@@ -2,7 +2,7 @@
 
 Aplicación React Native con TypeScript para el [desafío de Cocos](https://github.com/cocoscap/cocos-challenge/blob/main/react-native-challenge.md).
 
-Estado actual: Mercado muestra acciones, precios en pesos y retorno respecto del cierre. Incluye búsqueda por ticker, actualización manual/al regresar a la app, datos parciales y errores recuperables. Portfolio y órdenes corresponden a las siguientes etapas.
+Estado actual: Mercado muestra todos los instrumentos que devuelve `/instruments`, precios en pesos y retorno respecto del cierre. Incluye búsqueda por ticker, actualización manual/al regresar a la app, datos parciales y errores recuperables. Portfolio y órdenes corresponden a las siguientes etapas.
 
 ## Requisitos
 
@@ -45,7 +45,7 @@ También están disponibles `npm run android` y `npm run web`. Su presencia no i
 
 La configuración se valida con Zod al iniciar. Si falta un valor o es inválido, el error indica el campo afectado. Después de cambiar `.env`, recargar completamente la app. `.env` queda fuera de Git; `.env.example` es la referencia compartida.
 
-El cliente HTTP está en `src/api/client.ts`, con headers comunes y un timeout de 10 segundos por intento; no representa un SLA del servidor. Su interceptor normaliza errores sin reintentarlos. Mercado configura sus propios reintentos de lectura; esta política no se aplica automáticamente a futuras órdenes.
+El cliente HTTP está en `src/lib/client.ts`, con headers comunes y un timeout de 10 segundos por intento; no representa un SLA del servidor. Su interceptor normaliza errores sin reintentarlos. Mercado configura sus propios reintentos de lectura; esta política no se aplica automáticamente a futuras órdenes.
 
 ## Verificación
 
@@ -60,7 +60,7 @@ npx expo-doctor
 
 `npm test` ejecuta las pruebas locales sin depender de Cocos:
 
-- **Dominio:** retorno con distintos signos y precisión; una respuesta mixta con precios inválidos, identidad inválida y MONEDA; y la diferencia entre catálogo vacío y corrupción total.
+- **Dominio:** retorno con distintos signos y precisión; una respuesta mixta con precios inválidos, identidad inválida y una fila `MONEDA` que se conserva; y la diferencia entre catálogo vacío y corrupción total.
 - **Transporte y consultas:** HTTP real en loopback para petición correcta, HTML con status de error vs HTML inesperado, timeout de producción y reintentos acotados ante una conexión interrumpida seguida de errores 503. En la búsqueda, texto normalizado y codificado, y corte del pedido anterior al cambiar el texto. El cliente, interceptor, parser y política de TanStack son los de producción.
 - **Debounce:** una sola ejecución con el último valor y cancelación del disparo pendiente, con reloj falso.
 
@@ -75,15 +75,15 @@ Aviso conocido del tooling (2026-11-08): tras incorporar Jest, `npm audit` repor
 ## Decisiones técnicas
 
 - **Expo y expo-router:** simplifican la preparación y ejecución local. Se parte de la plantilla oficial y se retiran sus demos.
-- **Organización por feature:** el código específico de cada función se agrupa en `src/features/markets` (Mercado y búsqueda), `portfolio` y `orders`. Cada feature reúne sus llamadas al endpoint, validación, consultas, cálculos, UI y pruebas para corregir una funcionalidad principalmente en un mismo lugar. Se empieza con archivos directos y se crean carpetas cuando tienen código que alojar.
-- **Código compartido:** `src/app` contiene rutas y provider; `src/api` conserva una única instancia HTTP y normalización común de errores; `src/config` contiene la configuración. Las features usan este código compartido y no importan detalles internos de otras features. Los componentes se comparten cuando una segunda feature los necesita.
+- **Organización por feature:** el código específico de cada función se agrupa en `src/features/markets` (Mercado y búsqueda), `portfolio` y `orders`. Dentro de cada feature, el código se divide por responsabilidad en `api`, `components`, `hooks`, `screens`, `types` y `utils`, solo las que hagan falta. Las pruebas de un archivo van al lado de ese archivo, y las que prueban varias piezas juntas van en `__tests__`.
+- **Código compartido:** `src/app` contiene solo rutas y provider; `src/lib` tiene la instancia HTTP, los errores, la lectura validada y la política de reintentos; `src/components`, `src/hooks` y `src/utils` tienen lo común de interfaz y utilidades; `src/config` contiene la configuración. Las dependencias van en una sola dirección: lo compartido no conoce a las features, las features no se importan entre sí y las rutas las conectan. El lint rechaza las importaciones que rompen esa regla.
 - **axios:** reutiliza transporte, timeout y cancelación. Los headers fijos se configuran en una instancia compartida.
 - **TanStack Query:** gestiona los datos del servidor y se conecta en la raíz con un cliente estable. Las claves, invalidación y políticas se definen junto con cada función.
 - **Zod y fallos parciales:** validar el contenedor y cada instrumento. Una acción identificable con precio inválido conserva su fila y muestra el dato como no disponible; no se inventan ceros ni retornos. Un registro sin identidad se omite con aviso. La corrupción total es error, no lista vacía.
 - **Actualización por eventos:** al entrar/volver a Mercado, reactivar la app y deslizar para actualizar. Sin polling ni calendario de mercado para esta app de prueba. Se conserva una captura en memoria mientras se consulta, señalando fallos de actualización. La hora mostrada es la última consulta exitosa, no la hora de la cotización. No se promete un feed en tiempo real.
 - **Reintentos acotados:** solo Mercado reintenta red, timeout y HTTP 500/502/503/504 hasta dos veces, con exponential backoff y full jitter. Errores 4xx o datos inválidos requieren intervención. Desuscribir la consulta fuera de foco detiene reintentos pendientes y permite cancelar respuestas obsoletas. Actualizaciones simultáneas comparten la solicitud.
 - **Buscador:** va dentro de Mercado porque `/search` devuelve los mismos instrumentos, y usa ese endpoint en lugar de filtrar en el cliente. El texto se normaliza a mayúsculas, porque en los modos con fallas la API no encuentra minúsculas. Un debounce de 300 ms reduce los pedidos a uno por pausa. Cada texto tiene su propia clave de caché, así que una respuesta vieja no puede pisar a la nueva. Al cambiar de texto, TanStack aborta el pedido anterior mediante el `signal` que recibe axios, lo que ahorra red.
-- **Instrumentos y cálculos:** Mercado muestra `ACCIONES`; `MONEDA` se reconoce y separa deliberadamente. ARS no representa el efectivo del usuario: ese dato provendrá de `cash` en Portfolio. Retorno = `(last_price - close_price) / close_price * 100`, con entradas positivas/finitas y resultado finito. Number se utiliza para este porcentaje informativo; la representación del dinero para operar se definirá en su etapa. Redondear solo al presentar.
+- **Instrumentos y cálculos:** Mercado y la búsqueda muestran todos los instrumentos que devuelve la API, incluida la fila ARS de tipo `MONEDA`, como pide el enunciado. Retorno = `(last_price - close_price) / close_price * 100`, con entradas positivas/finitas y resultado finito. Number se utiliza para este porcentaje informativo; la representación del dinero para operar se definirá en su etapa. Redondear solo al presentar.
 - **UI y alcance:** lista inspirada en Binance Lite, adaptada a español/ARS, con signo además de color. Se usan FlatList y componentes nativos. El envío de órdenes se diseña en su propio spec.
 
 El proyecto conserva la licencia MIT de la plantilla Expo en `LICENSE`.

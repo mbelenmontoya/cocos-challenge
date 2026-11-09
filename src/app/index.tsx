@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-import { MarketScreen } from '@/features/markets/MarketScreen';
+import { MarketScreen } from '@/features/markets/screens/market-screen';
 
 export default function HomeScreen() {
   return (

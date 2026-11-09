@@ -8,12 +8,12 @@ import type { AddressInfo } from 'node:net';
 import { performance } from 'node:perf_hooks';
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
 
-import { api } from '@/api/client';
-import { AppError } from '@/api/errors';
+import { api } from '@/lib/client';
+import { AppError } from '@/lib/errors';
 
-import { getMarket } from './api';
-import { normalizeTicker } from './instruments';
-import { marketQueryOptions, searchQueryOptions } from './market-query';
+import { getMarket } from '../api/get-market';
+import { marketQueryOptions, searchQueryOptions } from '../api/market-query';
+import { normalizeTicker } from '../utils/normalize-ticker';
 
 const originalBaseURL = api.defaults.baseURL;
 const action = { id: 1, ticker: 'ALUA', name: 'Aluminio Argentino', type: 'ACCIONES', last_price: 125, close_price: 100 };

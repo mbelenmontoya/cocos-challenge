@@ -3,10 +3,10 @@
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
 
-import { api } from '@/api/client';
+import { api } from '@/lib/client';
 
-import { getMarket } from './api';
-import { calculateReturn } from './instruments';
+import { getMarket } from '../api/get-market';
+import { calculateReturn } from '../utils/calculate-return';
 
 const originalBaseURL = api.defaults.baseURL;
 
@@ -24,7 +24,6 @@ it('integra la lectura de Cocos en modo off con el contrato y los cálculos real
   expect(result).toMatchObject({ omitted: 0, incomplete: 0 });
   expect(new Set(result.instruments.map((item) => item.id)).size).toBe(result.instruments.length);
   for (const instrument of result.instruments) {
-    expect(instrument.type).toBe('ACCIONES');
     expect(instrument.ticker.length).toBeGreaterThan(0);
     expect(Number.isFinite(calculateReturn(instrument))).toBe(true);
   }

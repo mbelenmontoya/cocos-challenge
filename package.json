@@ -43,7 +43,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest --testPathIgnorePatterns=market.contract.test.ts",
-    "test:api": "jest --runInBand --runTestsByPath src/features/markets/market.contract.test.ts"
+    "test:api": "jest --runInBand --runTestsByPath src/features/markets/__tests__/market.contract.test.ts"
   },
   "jest": {
     "preset": "jest-expo",
