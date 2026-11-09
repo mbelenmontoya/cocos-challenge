@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { QueryList } from '@/components/query-list';
-import { colors } from '@/components/theme';
+import { Screen } from '@/components/screen';
 
 import { InstrumentRow } from '../components/instrument-row';
 import { SearchField } from '../components/search-field';
@@ -19,13 +17,7 @@ export function MarketScreen() {
   const market = useMarket(query);
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.heading}>
-        <Text style={styles.brand}>COCOS CHALLENGE</Text>
-        <Text accessibilityRole="header" style={styles.title}>Mercado</Text>
-        <Text style={styles.subtitle}>Instrumentos · Precios en pesos</Text>
-        <SearchField onSearch={setQuery} />
-      </View>
+    <Screen title="Mercado" subtitle="Instrumentos · Precios en pesos" headerContent={<SearchField onSearch={setQuery} />}>
       <QueryList
         query={market}
         items={market.data?.instruments}
@@ -36,14 +28,6 @@ export function MarketScreen() {
         listLabel="Lista de instrumentos"
         getNotice={getNotice}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surface },
-  heading: { paddingHorizontal: 24, paddingTop: 22, paddingBottom: 20, gap: 10 },
-  brand: { fontSize: 11, fontWeight: '700', letterSpacing: 1.8, color: colors.muted },
-  title: { fontSize: 34, fontWeight: '700', color: colors.text },
-  subtitle: { fontSize: 14, color: colors.muted },
-});

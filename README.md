@@ -2,7 +2,7 @@
 
 Aplicación React Native con TypeScript para el [desafío de Cocos](https://github.com/cocoscap/cocos-challenge/blob/main/react-native-challenge.md).
 
-Estado actual: Mercado muestra todos los instrumentos que devuelve `/instruments`, precios en pesos y retorno respecto del cierre. Incluye búsqueda por ticker, actualización manual/al regresar a la app, datos parciales y errores recuperables. Portfolio y órdenes corresponden a las siguientes etapas.
+Estado actual: Mercado muestra todos los instrumentos que devuelve `/instruments`, precios en pesos y retorno respecto del cierre. Incluye búsqueda por ticker, actualización manual/al regresar a la app, datos parciales y errores recuperables. Portfolio muestra los activos con cantidad, valor de mercado, ganancia y rendimiento. Las órdenes corresponden a la siguiente etapa.
 
 ## Requisitos
 
@@ -83,6 +83,7 @@ Aviso conocido del tooling (2026-11-08): tras incorporar Jest, `npm audit` repor
 - **Actualización por eventos:** al entrar/volver a Mercado, reactivar la app y deslizar para actualizar. Sin polling ni calendario de mercado para esta app de prueba. Se conserva una captura en memoria mientras se consulta, señalando fallos de actualización. La hora mostrada es la última consulta exitosa, no la hora de la cotización. No se promete un feed en tiempo real.
 - **Reintentos acotados:** solo Mercado reintenta red, timeout y HTTP 500/502/503/504 hasta dos veces, con exponential backoff y full jitter. Errores 4xx o datos inválidos requieren intervención. Desuscribir la consulta fuera de foco detiene reintentos pendientes y permite cancelar respuestas obsoletas. Actualizaciones simultáneas comparten la solicitud.
 - **Buscador:** va dentro de Mercado porque `/search` devuelve los mismos instrumentos, y usa ese endpoint en lugar de filtrar en el cliente. El texto se normaliza a mayúsculas, porque en los modos con fallas la API no encuentra minúsculas. Un debounce de 300 ms reduce los pedidos a uno por pausa. Cada texto tiene su propia clave de caché, así que una respuesta vieja no puede pisar a la nueva. Al cambiar de texto, TanStack aborta el pedido anterior mediante el `signal` que recibe axios, lo que ahorra red.
+- **Portfolio:** valor de mercado = `quantity * last_price`; ganancia = `(last_price - avg_cost_price) * quantity`; rendimiento = `(last_price - avg_cost_price) / avg_cost_price * 100`. Si falta un dato, solo los valores que dependen de él se muestran como no disponibles; nunca se inventa un cero. Una tenencia sin ticker se identifica por su `instrument_id`, sin cruzar con otra respuesta para no mezclar precios de momentos distintos.
 - **Instrumentos y cálculos:** Mercado y la búsqueda muestran todos los instrumentos que devuelve la API, incluida la fila ARS de tipo `MONEDA`, como pide el enunciado. Retorno = `(last_price - close_price) / close_price * 100`, con entradas positivas/finitas y resultado finito. Number se utiliza para este porcentaje informativo; la representación del dinero para operar se definirá en su etapa. Redondear solo al presentar.
 - **UI y alcance:** lista inspirada en Binance Lite, adaptada a español/ARS, con signo además de color. Se usan FlatList y componentes nativos. El envío de órdenes se diseña en su propio spec.
 

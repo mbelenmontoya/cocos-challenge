@@ -10,13 +10,13 @@ module.exports = defineConfig([
   expoConfig,
   { ignores: ['dist/*'] },
   forbidImports(
-    ['src/lib/**', 'src/hooks/**', 'src/utils/**', 'src/components/**', 'src/config/**'],
+    ['src/lib/**', 'src/hooks/**', 'src/utils/**', 'src/components/**', 'src/config/**', 'src/testing/**'],
     ['@/features/*', '@/app/*'],
     'El código compartido no puede depender de features ni de rutas.',
   ),
-  forbidImports(
-    ['src/features/markets/**'],
-    ['@/app/*', '@/features/*', '!@/features/markets/*'],
+  ...['markets', 'portfolio'].map((feature) => forbidImports(
+    [`src/features/${feature}/**`],
+    ['@/app/*', '@/features/*', `!@/features/${feature}/*`],
     'Una feature no puede depender de rutas ni de otra feature.',
-  ),
+  )),
 ]);

@@ -1,12 +1,1 @@
-import { Stack } from 'expo-router';
-
-import { MarketScreen } from '@/features/markets/screens/market-screen';
-
-export default function HomeScreen() {
-  return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <MarketScreen />
-    </>
-  );
-}
+export { MarketScreen as default } from '@/features/markets/screens/market-screen';

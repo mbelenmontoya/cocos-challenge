@@ -1,5 +1,5 @@
 import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
@@ -19,7 +19,10 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Stack />
+      <Tabs screenOptions={{ headerShown: false, tabBarIcon: () => null }}>
+        <Tabs.Screen name="index" options={{ title: 'Mercado' }} />
+        <Tabs.Screen name="portfolio" options={{ title: 'Portfolio' }} />
+      </Tabs>
       <StatusBar style="dark" />
     </QueryClientProvider>
   );

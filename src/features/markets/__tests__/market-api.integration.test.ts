@@ -3,13 +3,13 @@
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
 
-import { createServer, type IncomingHttpHeaders, type RequestListener, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import type { IncomingHttpHeaders, RequestListener } from 'node:http';
 import { performance } from 'node:perf_hooks';
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
 
 import { api } from '@/lib/client';
 import { AppError } from '@/lib/errors';
+import { startHttpServer } from '@/testing/http-server';
 
 import { getMarket } from '../api/get-market';
 import { marketQueryOptions, searchQueryOptions } from '../api/market-query';
@@ -18,7 +18,7 @@ import { normalizeTicker } from '../utils/normalize-ticker';
 const originalBaseURL = api.defaults.baseURL;
 const action = { id: 1, ticker: 'ALUA', name: 'Aluminio Argentino', type: 'ACCIONES', last_price: 125, close_price: 100 };
 
-let server: Server;
+let closeServer: () => Promise<void>;
 let handler: RequestListener;
 let requests: { method?: string; path?: string; headers: IncomingHttpHeaders }[];
 let queryClient: QueryClient;
@@ -32,23 +32,19 @@ beforeEach(async () => {
     response.writeHead(200, { 'Content-Type': 'application/json' });
     response.end(JSON.stringify([action]));
   };
-  server = createServer((request, response) => {
+  const server = await startHttpServer((request, response) => {
     requests.push({ method: request.method, path: request.url, headers: request.headers });
     handler(request, response);
   });
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', resolve);
-  });
-  api.defaults.baseURL = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  closeServer = server.close;
+  api.defaults.baseURL = server.url;
 });
 
 afterEach(async () => {
   queryClient.clear();
   clearTimeout(delayedResponse);
   api.defaults.baseURL = originalBaseURL;
-  server.closeAllConnections();
-  if (server.listening) await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  await closeServer();
 });
 
 it('envía método/ruta/headers por HTTP y convierte la respuesta en instrumentos', async () => {
