@@ -35,6 +35,11 @@ export function parseInstruments(input: unknown) {
   return { instruments, omitted, incomplete };
 }
 
+/** Uppercase because the API's bug modes only match uppercase tickers. */
+export function normalizeTicker(text: string): string {
+  return text.trim().toUpperCase();
+}
+
 export function calculateReturn(instrument: Instrument): number | null {
   if (instrument.last_price === null || instrument.close_price === null) return null;
   const value = ((instrument.last_price - instrument.close_price) / instrument.close_price) * 100;

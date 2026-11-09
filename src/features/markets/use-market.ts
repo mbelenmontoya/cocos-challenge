@@ -2,9 +2,9 @@ import { focusManager, useQuery } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState, useSyncExternalStore } from 'react';
 
-import { marketQueryOptions } from './market-query';
+import { marketQueryOptions, searchQueryOptions } from './market-query';
 
-export function useMarket() {
+export function useMarket(query: string) {
   const [isScreenFocused, setScreenFocused] = useState(false);
   const isAppActive = useSyncExternalStore(focusManager.subscribe, () => focusManager.isFocused(), () => true);
 
@@ -14,7 +14,7 @@ export function useMarket() {
   }, []));
 
   return useQuery({
-    ...marketQueryOptions,
+    ...(query ? searchQueryOptions(query) : marketQueryOptions),
     enabled: isScreenFocused && isAppActive,
     subscribed: isScreenFocused && isAppActive,
   });

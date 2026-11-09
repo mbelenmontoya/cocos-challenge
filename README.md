@@ -2,7 +2,7 @@
 
 Aplicación React Native con TypeScript para el [desafío de Cocos](https://github.com/cocoscap/cocos-challenge/blob/main/react-native-challenge.md).
 
-Estado actual: Mercado muestra acciones, precios en pesos y retorno respecto del cierre. Incluye actualización manual/al regresar a la app, datos parciales y errores recuperables. Búsqueda, portfolio y órdenes corresponden a las siguientes etapas.
+Estado actual: Mercado muestra acciones, precios en pesos y retorno respecto del cierre. Incluye búsqueda por ticker, actualización manual/al regresar a la app, datos parciales y errores recuperables. Portfolio y órdenes corresponden a las siguientes etapas.
 
 ## Requisitos
 
@@ -61,27 +61,29 @@ npx expo-doctor
 `npm test` ejecuta las pruebas locales sin depender de Cocos:
 
 - **Dominio:** retorno con distintos signos y precisión; una respuesta mixta con precios inválidos, identidad inválida y MONEDA; y la diferencia entre catálogo vacío y corrupción total.
-- **Transporte y consultas:** HTTP real en loopback para petición correcta, HTML con status de error vs HTML inesperado, timeout de producción y reintentos acotados ante una conexión interrumpida seguida de errores 503. El cliente, interceptor, parser y política de TanStack son los de producción.
+- **Transporte y consultas:** HTTP real en loopback para petición correcta, HTML con status de error vs HTML inesperado, timeout de producción y reintentos acotados ante una conexión interrumpida seguida de errores 503. En la búsqueda, texto normalizado y codificado, y corte del pedido anterior al cambiar el texto. El cliente, interceptor, parser y política de TanStack son los de producción.
+- **Debounce:** una sola ejecución con el último valor y cancelación del disparo pendiente, con reloj falso.
 
 `npm run test:api` ejecuta por separado una lectura de `/instruments` contra Cocos con bugs off. No fija precios ni cantidad de instrumentos, no envía órdenes ni reinicia cuentas. Una caída o cambio incompatible del servidor hace fallar esa comprobación; no se transforma en éxito. El contrato externo está excluido de `npm test`.
 
 Las pruebas locales cubren cálculos/interpretación y solicitudes HTTP reales contra un servidor local. No prueban el adaptador nativo de iOS. Las expectativas correctas se conservan cuando descubren un error; se corrige producción. Se comprobó que un divisor incorrecto y un timeout desactivado hacen fallar las pruebas correspondientes sin cambiar sus expectativas.
 
-La evidencia y los límites están en [Spec 2](docs/plans/2026-11-08-spec-2-mercado-errores.md); la preparación inicial se registra en [Spec 1](docs/plans/2026-11-07-spec-1-base.md). Todavía no hay operaciones de compra/venta.
+Todavía no hay operaciones de compra/venta.
 
-Aviso conocido del tooling (2026-11-08): tras incorporar Jest, `npm audit` reporta 31 avisos (1 bajo y 30 moderados), sin altos ni críticos, en el árbol de herramientas de Expo, ESLint y Jest. Las correcciones propuestas incluyen versiones incompatibles/downgrades; no se aplica `--force`. Ver evidencia en el Spec 2.
+Aviso conocido del tooling (2026-11-08): tras incorporar Jest, `npm audit` reporta 31 avisos (1 bajo y 30 moderados), sin altos ni críticos, en el árbol de herramientas de Expo, ESLint y Jest. Las correcciones propuestas incluyen versiones incompatibles/downgrades; no se aplica `--force`.
 
 ## Decisiones técnicas
 
 - **Expo y expo-router:** simplifican la preparación y ejecución local. Se parte de la plantilla oficial y se retiran sus demos.
-- **Organización por feature:** el código específico de Mercado, búsqueda, portfolio y órdenes se agrupa en `src/features/markets`, `search`, `portfolio` y `orders`. Cada feature reúne sus llamadas al endpoint, validación, consultas, cálculos, UI y pruebas para corregir una funcionalidad principalmente en un mismo lugar. Se empieza con archivos directos y se crean carpetas cuando tienen código que alojar.
-- **Código compartido:** `src/app` contiene rutas y provider; `src/api` conserva una única instancia HTTP y normalización común de errores; `src/config` contiene la configuración. Las features usan este código compartido y no importan detalles internos de otras features. Los componentes se comparten cuando una segunda feature los necesita. Ver [Spec 1a](docs/plans/2026-11-08-spec-1a-estructura-features.md).
+- **Organización por feature:** el código específico de cada función se agrupa en `src/features/markets` (Mercado y búsqueda), `portfolio` y `orders`. Cada feature reúne sus llamadas al endpoint, validación, consultas, cálculos, UI y pruebas para corregir una funcionalidad principalmente en un mismo lugar. Se empieza con archivos directos y se crean carpetas cuando tienen código que alojar.
+- **Código compartido:** `src/app` contiene rutas y provider; `src/api` conserva una única instancia HTTP y normalización común de errores; `src/config` contiene la configuración. Las features usan este código compartido y no importan detalles internos de otras features. Los componentes se comparten cuando una segunda feature los necesita.
 - **axios:** reutiliza transporte, timeout y cancelación. Los headers fijos se configuran en una instancia compartida.
 - **TanStack Query:** gestiona los datos del servidor y se conecta en la raíz con un cliente estable. Las claves, invalidación y políticas se definen junto con cada función.
 - **Zod y fallos parciales:** validar el contenedor y cada instrumento. Una acción identificable con precio inválido conserva su fila y muestra el dato como no disponible; no se inventan ceros ni retornos. Un registro sin identidad se omite con aviso. La corrupción total es error, no lista vacía.
 - **Actualización por eventos:** al entrar/volver a Mercado, reactivar la app y deslizar para actualizar. Sin polling ni calendario de mercado para esta app de prueba. Se conserva una captura en memoria mientras se consulta, señalando fallos de actualización. La hora mostrada es la última consulta exitosa, no la hora de la cotización. No se promete un feed en tiempo real.
 - **Reintentos acotados:** solo Mercado reintenta red, timeout y HTTP 500/502/503/504 hasta dos veces, con exponential backoff y full jitter. Errores 4xx o datos inválidos requieren intervención. Desuscribir la consulta fuera de foco detiene reintentos pendientes y permite cancelar respuestas obsoletas. Actualizaciones simultáneas comparten la solicitud.
+- **Buscador:** va dentro de Mercado porque `/search` devuelve los mismos instrumentos, y usa ese endpoint en lugar de filtrar en el cliente. El texto se normaliza a mayúsculas, porque en los modos con fallas la API no encuentra minúsculas. Un debounce de 300 ms reduce los pedidos a uno por pausa. Cada texto tiene su propia clave de caché, así que una respuesta vieja no puede pisar a la nueva. Al cambiar de texto, TanStack aborta el pedido anterior mediante el `signal` que recibe axios, lo que ahorra red.
 - **Instrumentos y cálculos:** Mercado muestra `ACCIONES`; `MONEDA` se reconoce y separa deliberadamente. ARS no representa el efectivo del usuario: ese dato provendrá de `cash` en Portfolio. Retorno = `(last_price - close_price) / close_price * 100`, con entradas positivas/finitas y resultado finito. Number se utiliza para este porcentaje informativo; la representación del dinero para operar se definirá en su etapa. Redondear solo al presentar.
-- **UI y alcance:** lista inspirada en Binance Lite, adaptada a español/ARS, con signo además de color. Se usan FlatList y componentes nativos. Búsqueda concurrente y envío de órdenes se diseñan en sus propios specs.
+- **UI y alcance:** lista inspirada en Binance Lite, adaptada a español/ARS, con signo además de color. Se usan FlatList y componentes nativos. El envío de órdenes se diseña en su propio spec.
 
 El proyecto conserva la licencia MIT de la plantilla Expo en `LICENSE`.

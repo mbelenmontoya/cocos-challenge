@@ -1,7 +1,9 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { calculateReturn, type Instrument } from './instruments';
+import { debounce } from './debounce';
+import { calculateReturn, type Instrument, normalizeTicker } from './instruments';
 import { useMarket } from './use-market';
 
 const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
@@ -26,8 +28,33 @@ function InstrumentRow({ instrument }: { instrument: Instrument }) {
   );
 }
 
+// Holds the typed text itself so keystrokes do not re-render the list.
+function SearchField({ onSearch }: { onSearch: (query: string) => void }) {
+  const [text, setText] = useState('');
+  const [search] = useState(() => debounce(onSearch, 300));
+
+  useEffect(() => search.cancel, [search]);
+
+  return (
+    <TextInput
+      accessibilityLabel="Buscar por ticker"
+      autoCapitalize="characters"
+      autoCorrect={false}
+      placeholder="Buscar por ticker"
+      placeholderTextColor="#636E7C"
+      style={styles.search}
+      value={text}
+      onChangeText={(value) => {
+        setText(value);
+        search(normalizeTicker(value));
+      }}
+    />
+  );
+}
+
 export function MarketScreen() {
-  const market = useMarket();
+  const [query, setQuery] = useState('');
+  const market = useMarket(query);
   const refresh = () => { void market.refetch({ cancelRefetch: false }); };
   const retryButton = (
     <Pressable accessibilityRole="button" accessibilityState={{ disabled: market.isFetching }} disabled={market.isFetching} style={styles.button} onPress={refresh}>
@@ -41,6 +68,7 @@ export function MarketScreen() {
         <Text style={styles.brand}>COCOS CHALLENGE</Text>
         <Text accessibilityRole="header" style={styles.title}>Mercado</Text>
         <Text style={styles.subtitle}>Acciones argentinas · Precios en pesos</Text>
+        <SearchField onSearch={setQuery} />
       </View>
       {market.isPending ? <Text style={styles.message}>Cargando acciones…</Text> : market.isError && !market.data ? (
         <View style={styles.state}>
@@ -54,9 +82,10 @@ export function MarketScreen() {
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => <InstrumentRow instrument={item} />}
           contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="handled"
           onRefresh={refresh}
           refreshing={market.isFetching}
-          ListEmptyComponent={<Text style={styles.message}>No hay acciones disponibles.</Text>}
+          ListEmptyComponent={<Text style={styles.message}>{query ? `No encontramos acciones para ${query}.` : 'No hay acciones disponibles.'}</Text>}
           ListHeaderComponent={
             <View style={styles.listHeading}>
               <Text style={styles.timestamp}>Última consulta exitosa: {new Date(market.dataUpdatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' })}</Text>
@@ -85,6 +114,7 @@ const styles = StyleSheet.create({
   brand: { fontSize: 11, fontWeight: '700', letterSpacing: 1.8, color: '#636E7C' },
   title: { fontSize: 34, fontWeight: '700', color: '#17202C' },
   subtitle: { fontSize: 14, color: '#636E7C' },
+  search: { minHeight: 48, paddingHorizontal: 16, borderRadius: 12, backgroundColor: '#F2F4F6', fontSize: 16, color: '#17202C' },
   list: { paddingHorizontal: 24, paddingBottom: 24 },
   listHeading: { gap: 16, paddingBottom: 8 },
   timestamp: { fontSize: 12, color: '#636E7C' },
