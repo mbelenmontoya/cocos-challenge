@@ -14,7 +14,7 @@ module.exports = defineConfig([
     ['@/features/*', '@/app/*'],
     'El código compartido no puede depender de features ni de rutas.',
   ),
-  ...['markets', 'portfolio'].map((feature) => forbidImports(
+  ...['markets', 'portfolio', 'orders'].map((feature) => forbidImports(
     [`src/features/${feature}/**`],
     ['@/app/*', '@/features/*', `!@/features/${feature}/*`],
     'Una feature no puede depender de rutas ni de otra feature.',
