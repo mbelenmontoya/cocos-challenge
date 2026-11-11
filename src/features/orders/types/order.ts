@@ -21,3 +21,6 @@ export const orderSchema = z.object({
 export type Order = z.infer<typeof orderSchema>;
 
 export type OrderInstrument = { id: number; ticker: string; last_price: number | null };
+
+/** What the account has for this instrument. A null value means it could not be read. */
+export type OrderAccount = { cash: number | null; heldShares: number | null };

@@ -5,7 +5,7 @@ export type MaxSharesResult =
   | { status: 'price_unavailable' };
 
 // Reads the digits instead of multiplying, because 1.15 * 100 is 114.99999999999999 in floating point.
-function toCents(text: string): number | null {
+export function toCents(text: string): number | null {
   const match = /^(\d+)(?:[.,](\d{1,2}))?$/.exec(text);
   if (!match) return null;
   const cents = Number(match[1] + (match[2] ?? '').padEnd(2, '0'));

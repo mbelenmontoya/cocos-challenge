@@ -5,7 +5,8 @@ import { colors } from '@/components/theme';
 import { formatCurrency } from '@/utils/format';
 
 import { useOrderSubmission } from '../hooks/use-order-submission';
-import type { OrderBody, OrderInstrument } from '../types/order';
+import type { OrderAccount, OrderBody, OrderInstrument } from '../types/order';
+import { type Availability, checkAvailability } from '../utils/availability';
 import { maxSharesForAmount, parseExactShares, parseLimitPrice } from '../utils/order-quantity';
 import type { SubmissionState } from '../utils/order-submitter';
 
@@ -61,19 +62,36 @@ const stateMessage = (state: SubmissionState): { text: string; tone: 'ok' | 'err
   }
 };
 
-type OrderModalProps = { instrument: OrderInstrument | null; onClose: () => void };
+const availabilityMessage = (availability: Availability) => {
+  switch (availability.status) {
+    case 'insufficient_cash': return `Saldo insuficiente: la orden cuesta ${formatCurrency(availability.cost)} y tenés ${formatCurrency(availability.cash)} disponibles.`;
+    case 'insufficient_shares': return availability.held === 1
+      ? 'Tenés 1 acción disponible para vender.'
+      : `Tenés ${availability.held} acciones disponibles para vender.`;
+    default: return null;
+  }
+};
+
+type OrderFormProps = {
+  instrument: OrderInstrument;
+  account?: OrderAccount;
+  onClose: () => void;
+  onOrderCreated?: () => void;
+};
+
+type OrderModalProps = Omit<OrderFormProps, 'instrument'> & { instrument: OrderInstrument | null };
 
 /** The order form for one instrument. A new instrument mounts a fresh form. */
-export function OrderModal({ instrument, onClose }: OrderModalProps) {
+export function OrderModal({ instrument, ...props }: OrderModalProps) {
   if (!instrument) return null;
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <OrderForm key={instrument.id} instrument={instrument} onClose={onClose} />
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={props.onClose}>
+      <OrderForm key={instrument.id} instrument={instrument} {...props} />
     </Modal>
   );
 }
 
-function OrderForm({ instrument, onClose }: { instrument: OrderInstrument; onClose: () => void }) {
+function OrderForm({ instrument, account, onClose, onOrderCreated }: OrderFormProps) {
   const { state, submit, resume, dismiss } = useOrderSubmission();
   const [side, setSide] = useState<Side>('BUY');
   const [type, setType] = useState<OrderType>('MARKET');
@@ -88,6 +106,11 @@ function OrderForm({ instrument, onClose }: { instrument: OrderInstrument; onClo
     void resume();
   }, [dismiss, resume]);
 
+  // A created order changes cash and holdings, so the caller reads them again.
+  useEffect(() => {
+    if (state.kind === 'created') onOrderCreated?.();
+  }, [state, onOrderCreated]);
+
   const amount = mode === 'amount' ? maxSharesForAmount(quantityText, instrument.last_price) : null;
   const quantity = amount ? (amount.status === 'ok' ? amount.shares : null) : parseExactShares(quantityText);
   const price = type === 'LIMIT' ? parseLimitPrice(priceText) : null;
@@ -95,6 +118,11 @@ function OrderForm({ instrument, onClose }: { instrument: OrderInstrument; onClo
   const priceError = type === 'LIMIT' && price === null ? 'Ingresá un precio mayor que cero, con hasta 2 decimales.' : null;
   const working = state.kind === 'sending' || state.kind === 'checking';
   const message = stateMessage(state);
+  const body: OrderBody | null = quantity === null || (type === 'LIMIT' && price === null)
+    ? null
+    : { instrument_id: instrument.id, side, type, quantity, ...(type === 'LIMIT' && price !== null ? { price } : {}) };
+  const availability = body ? checkAvailability(body, instrument.last_price, account) : null;
+  const availabilityError = availability ? availabilityMessage(availability) : null;
 
   // The same text means pesos in one mode and shares in the other, so it is never carried over.
   const changeMode = (next: QuantityMode) => {
@@ -104,12 +132,10 @@ function OrderForm({ instrument, onClose }: { instrument: OrderInstrument; onClo
   };
 
   const send = () => {
-    if (quantity === null || (type === 'LIMIT' && price === null)) {
+    if (!body || availabilityError) {
       setShowErrors(true);
       return;
     }
-    const body: OrderBody = { instrument_id: instrument.id, side, type, quantity };
-    if (type === 'LIMIT' && price !== null) body.price = price;
     void submit(body);
   };
 
@@ -154,6 +180,7 @@ function OrderForm({ instrument, onClose }: { instrument: OrderInstrument; onClo
           {showErrors && priceError && <Text style={styles.error}>{priceError}</Text>}
         </>
       )}
+      {availabilityError && <Text accessibilityRole="alert" style={styles.error}>{availabilityError}</Text>}
 
       <Pressable
         accessibilityRole="button"

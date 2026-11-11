@@ -2,7 +2,7 @@
 
 Aplicación React Native con TypeScript para el [desafío de Cocos](https://github.com/cocoscap/cocos-challenge/blob/main/react-native-challenge.md).
 
-Estado actual: Mercado muestra todos los instrumentos que devuelve `/instruments`, precios en pesos y retorno respecto del cierre. Incluye búsqueda por ticker, actualización manual/al regresar a la app, datos parciales y errores recuperables. Portfolio muestra los activos con cantidad, valor de mercado, ganancia y rendimiento. Tocar un instrumento de Mercado (menos la fila de pesos) abre un modal para enviar una orden de compra o venta, `MARKET` o `LIMIT`, por cantidad de acciones o por monto en pesos, y muestra el `id` y el `status` que devuelve la API.
+Estado actual: Mercado muestra todos los instrumentos que devuelve `/instruments`, precios en pesos y retorno respecto del cierre. Incluye búsqueda por ticker, actualización manual/al regresar a la app, datos parciales y errores recuperables. Portfolio muestra los activos con cantidad, valor de mercado, ganancia y rendimiento. Tocar un instrumento de Mercado (menos la fila de pesos) abre un modal para enviar una orden de compra o venta, `MARKET` o `LIMIT`, por cantidad de acciones o por monto en pesos, y muestra el `id` y el `status` que devuelve la API. Antes de enviar, avisa si una compra supera el efectivo disponible o una venta supera las acciones de la tenencia.
 
 ## Requisitos
 
@@ -54,8 +54,6 @@ npm test -- --runInBand
 npm run test:api
 npm run typecheck
 npm run lint
-npx expo install --check
-npx expo-doctor
 ```
 
 `npm test` ejecuta las pruebas locales sin depender de Cocos:
@@ -64,6 +62,7 @@ npx expo-doctor
 - **Transporte y consultas:** HTTP real en loopback para petición correcta, HTML con status de error vs HTML inesperado, timeout de producción y reintentos acotados ante una conexión interrumpida seguida de errores 503. En la búsqueda, texto normalizado y codificado, y corte del pedido anterior al cambiar el texto. El cliente, interceptor, parser y política de TanStack son los de producción.
 - **Debounce:** una sola ejecución con el último valor y cancelación del disparo pendiente, con reloj falso.
 - **Cantidad por monto:** la cuenta de acciones se compara con una regla que define el resultado correcto (`cantidad * precio` no supera el monto y una acción más sí lo supera) en todos los precios de 0,01 a 97,56, más montos y precios inválidos de todo tipo.
+- **Saldo y acciones disponibles:** compra MARKET contra el último precio y LIMIT contra el precio límite, venta contra la tenencia, el límite exacto de un centavo, y los casos en que falta un dato y decide el servidor.
 - **Envío de órdenes:** HTTP real en loopback para el cuerpo exacto, el rechazo 400 con su mensaje, y el resultado incierto ante 503, 408, timeout, conexión cortada o respuesta ilegible, siempre con un solo POST. También cubre dos envíos en el mismo instante, la intención guardada antes del POST, la reconciliación con el historial (orden encontrada, no creada, órdenes previas iguales y órdenes ajenas) y la reapertura con una intención pendiente.
 
 `npm run test:api` ejecuta por separado una lectura de `/instruments` contra Cocos con bugs off. No fija precios ni cantidad de instrumentos, no envía órdenes ni reinicia cuentas. Una caída o cambio incompatible del servidor hace fallar esa comprobación; no se transforma en éxito. El contrato externo está excluido de `npm test`.
@@ -72,7 +71,21 @@ Las pruebas locales cubren cálculos/interpretación y solicitudes HTTP reales c
 
 Se comprobó además que romper a propósito el bloqueo, el guardado previo al POST o cualquier campo de la comparación con el historial hace fallar las pruebas de envío.
 
-Aviso conocido del tooling (2026-11-08): tras incorporar Jest, `npm audit` reporta 31 avisos (1 bajo y 30 moderados), sin altos ni críticos, en el árbol de herramientas de Expo, ESLint y Jest. Las correcciones propuestas incluyen versiones incompatibles/downgrades; no se aplica `--force`.
+Aviso conocido del tooling (2026-11-11): `npm audit` reporta 29 avisos (1 bajo y 28 moderados), sin altos ni críticos, en el árbol de herramientas de Expo, ESLint y Jest. Las correcciones propuestas incluyen versiones incompatibles/downgrades; no se aplica `--force`.
+
+## Modos de fallas de la API
+
+`EXPO_PUBLIC_ENABLE_BUGS` elige cómo se comporta el backend. Lo siguiente se observó el 2026-11-11 con dos recorridos completos de la app por modo en el simulador iOS (Mercado, buscador, Portfolio y cuatro órdenes), diez lecturas directas de cada endpoint por modo y órdenes enviadas con cuentas descartables. Las fallas son del servidor y pueden variar entre corridas.
+
+| Pantalla | Qué hace la API | Qué muestra la app |
+|---|---|---|
+| Mercado | `off`: 26 instrumentos correctos. `easy`, `medium` y `hard`: MIRG llega con `last_price` 0. | La fila de MIRG se conserva con precio y retorno «No disponible», y aparece el aviso «Información incompleta». No se inventa un cero. |
+| Buscador | `easy`, `medium` y `hard`: `/search?query=dyca` devuelve 0 resultados; en mayúsculas encuentra DYCA. | Encuentra DYCA en los cuatro modos, porque el texto se normaliza a mayúsculas antes de enviarlo. |
+| Portfolio | Lecturas correctas en los cuatro modos. En `off` y `medium` la cantidad de una tenencia descuenta las acciones reservadas por una venta pendiente; en `hard` no las descuenta. | Muestra lo que devuelve la API. En `hard`, el aviso de acciones disponibles puede permitir una venta que el servidor después resuelva distinto. |
+| Órdenes | `medium` y `hard` crean órdenes con status 200 en lugar de 201. En `hard`, el `status` del POST no siempre coincide con el historial (una MARKET devuelta `PENDING` figura `FILLED`; una LIMIT devuelta `FILLED` figura `PENDING`), una compra LIMIT a $ 40 quedó `FILLED` aunque el último precio era $ 45,72, y las MARKET se ejecutaron a $ 50,07 (el cierre) en vez de $ 45,72. En todos los modos acepta una LIMIT con precio 0 o negativo. | Acepta cualquier 2xx con una orden válida y muestra el `id` y el `status` que devolvió el POST, como pide el enunciado. No corrige ejecuciones ni estados del servidor. El precio 0 o negativo se rechaza antes de enviar. |
+| Saldo | En los cuatro modos, una compra mayor al efectivo responde 400 `Insufficient cash`. | Avisa antes de enviar con el costo y el efectivo disponible, y no envía. |
+
+En estas corridas no hubo errores HTTP, timeouts ni respuestas lentas (la lectura más lenta tardó 483 ms). Esos casos están cubiertos por las pruebas locales y por un proxy de prueba que los fuerza: 503, timeout, conexión cortada, respuesta ilegible y caída del historial.
 
 ## Decisiones técnicas
 
@@ -92,11 +105,12 @@ Aviso conocido del tooling (2026-11-08): tras incorporar Jest, `npm audit` repor
   - envía cada orden como máximo una vez y nunca reintenta el POST;
   - bloquea un segundo envío en el mismo instante con un candado síncrono, no solo desactivando el botón;
   - permite una sola orden en curso: si el resultado queda incierto, no se puede enviar otra hasta confirmarlo;
-  - trata un 4xx (menos 408) como rechazo seguro y muestra el mensaje de la API; un timeout, una caída de red, un 408, un 5xx o un 201 ilegible dejan el resultado incierto;
+  - trata un 4xx (menos 408) como rechazo seguro y muestra el mensaje de la API; un timeout, una caída de red, un 408, un 5xx o una respuesta 2xx ilegible dejan el resultado incierto (en los modos `medium` y `hard` la API crea órdenes con 200 en lugar de 201);
   - reconcilia un resultado incierto con `GET /orders`: antes de enviar guarda los `id` existentes, y después busca una orden nueva con el mismo instrumento, lado, tipo y cantidad, y el mismo precio solo en `LIMIT` (en `MARKET` la API devuelve el precio de ejecución);
   - guarda la intención en el dispositivo con AsyncStorage antes del POST, con una clave por cuenta, para confirmarla al reabrir la app si se cerró durante el envío.
 
   Límites conocidos: dos órdenes idénticas enviadas a la vez desde otro dispositivo no se distinguen; si el servidor procesa una orden después de la consulta que no la encontró, la app la da por no registrada. La API responde 400 `Insufficient cash` cuando falta saldo, aunque el enunciado describe ese caso como `REJECTED`; la app muestra lo que responde la API.
+- **Saldo y acciones antes de enviar:** el servidor valida, pero en algunos modos con fallas acepta órdenes que no debería, por ejemplo vender más acciones de las que hay. Por eso el modal compara el costo de una compra (cantidad por precio límite en `LIMIT`, o por último precio en `MARKET`, en centavos enteros) con el `cash` de `/portfolio`, que ya descuenta lo reservado, y la cantidad de una venta con la tenencia. Si no alcanza, muestra el motivo y no envía. Si falta un dato o no se puede leer, no bloquea y decide el servidor. La ruta de Mercado lee el portfolio solo mientras el modal está abierto y lo vuelve a leer después de cada orden creada.
 - **UI y alcance:** lista inspirada en Binance Lite, adaptada a español/ARS, con signo además de color. Se usan FlatList y componentes nativos. El modal es una hoja nativa de iOS con «Cerrar» arriba a la izquierda. La fila de pesos no abre el modal, porque es la moneda de la cuenta.
 
 El proyecto conserva la licencia MIT de la plantilla Expo en `LICENSE`.

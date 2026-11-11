@@ -21,8 +21,12 @@ it('conserva las filas identificables y omite las que no tienen identidad', () =
   ]);
 });
 
+it.each([undefined, null, -1, '1000', Number.NaN])('deja el efectivo como no disponible si llega %p', (cash) => {
+  expect(parsePortfolio({ cash, holdings: [holding] }).cash).toBeNull();
+});
+
 it('distingue un portfolio vacío de una respuesta inválida', () => {
-  expect(parsePortfolio({ cash: 1000, holdings: [] })).toEqual({ holdings: [], omitted: 0, incomplete: 0 });
+  expect(parsePortfolio({ cash: 1000, holdings: [] })).toEqual({ cash: 1000, holdings: [], omitted: 0, incomplete: 0 });
   expect(() => parsePortfolio({ cash: 1000, holdings: 'nada' })).toThrow();
   expect(() => parsePortfolio({ cash: 1000, holdings: [{ ticker: 'DYCA' }] })).toThrow();
 });

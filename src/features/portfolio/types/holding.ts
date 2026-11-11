@@ -10,4 +10,4 @@ export const holdingSchema = z.object({
 
 export type Holding = z.infer<typeof holdingSchema>;
 
-export type Portfolio = { holdings: Holding[]; omitted: number; incomplete: number };
+export type Portfolio = { cash: number | null; holdings: Holding[]; omitted: number; incomplete: number };

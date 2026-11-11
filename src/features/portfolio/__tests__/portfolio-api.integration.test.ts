@@ -42,6 +42,7 @@ it('pide el portfolio de la cuenta y devuelve la tenencia interpretada', async (
   expect(requests).toHaveLength(1);
   expect(requests[0]).toMatchObject({ method: 'GET', path: '/portfolio', headers: { 'x-candidate-id': 'market-flow-tests', 'x-enable-bugs': 'off' } });
   expect(result).toEqual({
+    cash: 999954.28,
     holdings: [{ instrument_id: 1, ticker: 'DYCA', quantity: 1, last_price: 45.72, avg_cost_price: 45.72 }],
     omitted: 0,
     incomplete: 0,
