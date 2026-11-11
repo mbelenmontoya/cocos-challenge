@@ -5,7 +5,7 @@ import { colors } from '@/components/theme';
 import { formatCurrency } from '@/utils/format';
 
 import { useOrderSubmission } from '../hooks/use-order-submission';
-import type { OrderAccount, OrderBody, OrderInstrument } from '../types/order';
+import type { Order, OrderAccount, OrderBody, OrderInstrument } from '../types/order';
 import { type Availability, checkAvailability } from '../utils/availability';
 import { maxSharesForAmount, parseExactShares, parseLimitPrice } from '../utils/order-quantity';
 import type { SubmissionState } from '../utils/order-submitter';
@@ -47,11 +47,22 @@ const amountMessage = (result: ReturnType<typeof maxSharesForAmount>) => {
   }
 };
 
-const stateMessage = (state: SubmissionState): { text: string; tone: 'ok' | 'error' | 'muted' } | null => {
+const finishedStates = new Set<SubmissionState['kind']>(['created', 'rejected', 'not_sent', 'not_created']);
+
+type Tone = 'ok' | 'error' | 'muted';
+
+// Meanings and colors follow the status definitions in the challenge statement.
+const statusDetail: Record<Order['status'], { detail: string; tone: Tone }> = {
+  FILLED: { detail: 'Ejecutada.', tone: 'ok' },
+  PENDING: { detail: 'Pendiente: se ejecuta si el precio llega al límite.', tone: 'muted' },
+  REJECTED: { detail: 'Rechazada: no cumple los requisitos, por ejemplo si el monto supera tu saldo.', tone: 'error' },
+};
+
+const stateMessage = (state: SubmissionState): { text: string; tone: Tone; detail?: string } | null => {
   switch (state.kind) {
     case 'created': return {
       text: `Orden #${state.order.id}: ${state.order.status}${state.confirmedByHistory ? '. Confirmada por historial.' : ''}`,
-      tone: 'ok',
+      ...statusDetail[state.order.status],
     };
     case 'rejected': return { text: state.message, tone: 'error' };
     case 'not_sent': return { text: 'No pudimos preparar la orden. No se envió.', tone: 'error' };
@@ -125,6 +136,13 @@ function OrderForm({ instrument, account, onClose, onOrderCreated }: OrderFormPr
   const availabilityError = availability ? availabilityMessage(availability) : null;
 
   // The same text means pesos in one mode and shares in the other, so it is never carried over.
+  // A finished result belongs to the order already sent, so editing the form clears it.
+  // An unconfirmed order stays visible: it still blocks sending until it is confirmed.
+  const edited = <T,>(apply: (value: T) => void) => (value: T) => {
+    if (finishedStates.has(state.kind)) dismiss();
+    apply(value);
+  };
+
   const changeMode = (next: QuantityMode) => {
     setMode(next);
     setQuantityText('');
@@ -149,9 +167,9 @@ function OrderForm({ instrument, account, onClose, onOrderCreated }: OrderFormPr
         <Text style={styles.muted}>Último precio: {formatCurrency(instrument.last_price)}</Text>
       </View>
 
-      <Choice label="Operación" value={side} onChange={setSide} options={[{ value: 'BUY', label: 'Comprar' }, { value: 'SELL', label: 'Vender' }]} />
-      <Choice label="Tipo de orden" value={type} onChange={setType} options={[{ value: 'MARKET', label: 'Market' }, { value: 'LIMIT', label: 'Limit' }]} />
-      <Choice label="Cargar por" value={mode} onChange={changeMode} options={[{ value: 'shares', label: 'Acciones' }, { value: 'amount', label: 'Monto en pesos' }]} />
+      <Choice label="Operación" value={side} onChange={edited(setSide)} options={[{ value: 'BUY', label: 'Comprar' }, { value: 'SELL', label: 'Vender' }]} />
+      <Choice label="Tipo de orden" value={type} onChange={edited(setType)} options={[{ value: 'MARKET', label: 'Market' }, { value: 'LIMIT', label: 'Limit' }]} />
+      <Choice label="Cargar por" value={mode} onChange={edited(changeMode)} options={[{ value: 'shares', label: 'Acciones' }, { value: 'amount', label: 'Monto en pesos' }]} />
 
       <TextInput
         accessibilityLabel={mode === 'shares' ? 'Cantidad de acciones' : 'Monto a invertir'}
@@ -159,7 +177,7 @@ function OrderForm({ instrument, account, onClose, onOrderCreated }: OrderFormPr
         placeholderTextColor={colors.muted}
         keyboardType={mode === 'shares' ? 'number-pad' : 'decimal-pad'}
         value={quantityText}
-        onChangeText={setQuantityText}
+        onChangeText={edited(setQuantityText)}
         style={styles.input}
       />
       {amount && quantityText.trim() !== '' && <Text style={amount.status === 'ok' ? styles.muted : styles.error}>{amountMessage(amount)}</Text>}
@@ -174,7 +192,7 @@ function OrderForm({ instrument, account, onClose, onOrderCreated }: OrderFormPr
             placeholderTextColor={colors.muted}
             keyboardType="decimal-pad"
             value={priceText}
-            onChangeText={setPriceText}
+            onChangeText={edited(setPriceText)}
             style={styles.input}
           />
           {showErrors && priceError && <Text style={styles.error}>{priceError}</Text>}
@@ -194,9 +212,10 @@ function OrderForm({ instrument, account, onClose, onOrderCreated }: OrderFormPr
       </Pressable>
 
       {message && (
-        <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.result, message.tone === 'ok' ? styles.ok : message.tone === 'error' ? styles.error : styles.muted]}>
-          {message.text}
-        </Text>
+        <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.resultBox}>
+          <Text style={[styles.result, toneStyle[message.tone]]}>{message.text}</Text>
+          {message.detail && <Text style={[styles.result, toneStyle[message.tone]]}>{message.detail}</Text>}
+        </View>
       )}
     </ScrollView>
   );
@@ -217,8 +236,11 @@ const styles = StyleSheet.create({
   submit: { minHeight: 52, borderRadius: 12, backgroundColor: colors.text, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   submitDisabled: { opacity: 0.5 },
   submitText: { color: colors.surface, fontSize: 16, fontWeight: '700' },
+  resultBox: { gap: 4 },
   result: { fontSize: 15, lineHeight: 22 },
   muted: { fontSize: 14, color: colors.muted },
   ok: { color: colors.positive, fontWeight: '600' },
   error: { fontSize: 14, color: colors.negative },
 });
+
+const toneStyle = { ok: styles.ok, error: styles.error, muted: styles.muted };

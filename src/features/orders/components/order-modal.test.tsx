@@ -115,3 +115,47 @@ it.each([
 
   expect(await screen.findByText(message)).toBeOnTheScreen();
 });
+
+it.each([
+  ['FILLED', 'Ejecutada.', '#147644'],
+  ['PENDING', 'Pendiente: se ejecuta si el precio llega al límite.', '#636E7C'],
+  ['REJECTED', 'Rechazada: no cumple los requisitos, por ejemplo si el monto supera tu saldo.', '#B32632'],
+] as const)('explica el estado %s con su color', async (status, explanation, color) => {
+  await open();
+  ordersApi.postOrder.mockResolvedValue({ kind: 'created', order: order({ status }) });
+  await typeInto('Cantidad de acciones', '1');
+  await send();
+
+  expect(await screen.findByText(`Orden #7: ${status}`)).toHaveStyle({ color });
+  expect(screen.getByText(explanation)).toHaveStyle({ color });
+});
+
+it.each([
+  ['la cantidad', () => typeInto('Cantidad de acciones', '2')],
+  ['el tipo', () => choose('Limit')],
+  ['el lado', () => choose('Vender')],
+  ['el modo', () => choose('Monto en pesos')],
+])('limpia el resultado anterior al cambiar %s', async (_name, edit) => {
+  await open();
+  await typeInto('Cantidad de acciones', '1');
+  await send();
+  expect(await screen.findByText('Orden #7: FILLED')).toBeOnTheScreen();
+
+  await edit();
+
+  expect(screen.queryByText('Orden #7: FILLED')).not.toBeOnTheScreen();
+  expect(screen.queryByText('Ejecutada.')).not.toBeOnTheScreen();
+});
+
+it('mantiene el aviso de orden sin confirmar aunque se edite el formulario', async () => {
+  await open();
+  ordersApi.postOrder.mockResolvedValue({ kind: 'uncertain' });
+  ordersApi.getOrders.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('down'));
+  await typeInto('Cantidad de acciones', '1');
+  await send();
+  expect(await screen.findByText('No pudimos confirmar tu orden. No la vuelvas a enviar.')).toBeOnTheScreen();
+
+  await typeInto('Cantidad de acciones', '3');
+
+  expect(screen.getByText('No pudimos confirmar tu orden. No la vuelvas a enviar.')).toBeOnTheScreen();
+});

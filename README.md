@@ -2,6 +2,10 @@
 
 Aplicación React Native con TypeScript para el [desafío de Cocos](https://github.com/cocoscap/cocos-challenge/blob/main/react-native-challenge.md).
 
+<p align="center"><img src="assets/readme/recorrido-app.gif" alt="Recorrido de la app en el simulador iOS" width="320"></p>
+
+Recorrido en el simulador iOS contra la API real (modo `off`): búsqueda por ticker en minúsculas, compra MARKET por cantidad de acciones, compra por monto en pesos con la cantidad calculada al último precio, orden LIMIT que queda `PENDING`, aviso de saldo insuficiente y aviso de acciones insuficientes antes de enviar, y Portfolio con las tenencias resultantes.
+
 Estado actual: Mercado muestra todos los instrumentos que devuelve `/instruments`, precios en pesos y retorno respecto del cierre. Incluye búsqueda por ticker, actualización manual/al regresar a la app, datos parciales y errores recuperables. Portfolio muestra los activos con cantidad, valor de mercado, ganancia y rendimiento. Tocar un instrumento de Mercado (menos la fila de pesos) abre un modal para enviar una orden de compra o venta, `MARKET` o `LIMIT`, por cantidad de acciones o por monto en pesos, y muestra el `id` y el `status` que devuelve la API. Antes de enviar, avisa si una compra supera el efectivo disponible o una venta supera las acciones de la tenencia.
 
 ## Requisitos
