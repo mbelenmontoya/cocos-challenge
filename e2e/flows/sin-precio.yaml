@@ -1,0 +1,31 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento DYCA
+- extendedWaitUntil:
+    visible: "Último precio: No disponible"
+    timeout: 8000
+- tapOn: Monto en pesos
+- tapOn: Monto a invertir
+- eraseText: 20
+- inputText: "100"
+- extendedWaitUntil:
+    visible: "No hay último precio para calcular la cantidad."
+    timeout: 8000
+- tapOn: Enviar orden
+- assertNotVisible: "Orden #.*"
+- tapOn: Acciones
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "1"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000

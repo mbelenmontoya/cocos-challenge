@@ -1,0 +1,27 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento DYCA
+- tapOn: Monto en pesos
+- tapOn: Monto a invertir
+- eraseText: 20
+- inputText: "100"
+- extendedWaitUntil:
+    visible: "Se enviarán 2 acciones"
+    timeout: 8000
+- tapOn: Acciones
+- assertNotVisible: "100"
+- assertVisible: "Cantidad de acciones"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Ingresá una cantidad entera mayor que cero."
+    timeout: 8000
+- tapOn: Monto en pesos
+- assertNotVisible: "Ingresá una cantidad entera mayor que cero."

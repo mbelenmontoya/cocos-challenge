@@ -1,0 +1,22 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Buscar por ticker
+- inputText: cap
+- extendedWaitUntil:
+    visible: "Instrumento CAPX"
+    timeout: 8000
+- tapOn: Instrumento CAPX
+- extendedWaitUntil:
+    visible: "CAPX"
+    timeout: 8000
+- extendedWaitUntil:
+    visible: "Último precio: .*"
+    timeout: 8000

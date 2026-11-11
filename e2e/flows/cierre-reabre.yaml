@@ -1,0 +1,14 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento MOLA
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED. Confirmada por historial."
+    timeout: 20000

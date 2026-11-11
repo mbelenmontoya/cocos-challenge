@@ -1,0 +1,44 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento DYCA
+- extendedWaitUntil:
+    visible: "Último precio: .*"
+    timeout: 10000
+- tapOn: Comprar
+- tapOn: Market
+- tapOn: Acciones
+- tapOn: Cantidad de acciones
+- inputText: "2"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000
+- copyTextFrom:
+    text: "Orden #\\d+: FILLED"
+- evalScript: ${console.log('TS001_FIRST ' + maestro.copiedText)}
+- tapOn: Cerrar
+- tapOn: Instrumento DYCA
+- tapOn: Monto en pesos
+- tapOn: Monto a invertir
+- inputText: "100"
+- assertVisible: "Se enviarán 2 acciones"
+- tapOn: Limit
+- tapOn: Enviar orden
+- assertVisible: "Ingresá un precio mayor que cero, con hasta 2 decimales."
+- tapOn: Precio límite
+- inputText: "40,5"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: PENDING"
+    timeout: 20000
+- copyTextFrom:
+    text: "Orden #\\d+: PENDING"
+- evalScript: ${console.log('TS001_LIMIT ' + maestro.copiedText)}

@@ -1,0 +1,50 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento DYCA
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Ingresá una cantidad entera mayor que cero."
+    timeout: 8000
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "0"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Ingresá una cantidad entera mayor que cero."
+    timeout: 8000
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "1,5"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Ingresá una cantidad entera mayor que cero."
+    timeout: 8000
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "-1"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Ingresá una cantidad entera mayor que cero."
+    timeout: 8000
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "abc"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Ingresá una cantidad entera mayor que cero."
+    timeout: 8000
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: " 2 "
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000

@@ -1,0 +1,17 @@
+appId: host.exp.Exponent
+---
+- tapOn: Cantidad de acciones
+- eraseText: 10
+- inputText: "1"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: La orden no se registró.
+    timeout: 20000
+- tapOn: Cerrar
+- tapOn: Buscar por ticker
+- inputText: ars
+- extendedWaitUntil:
+    visible: Instrumento ARS
+    timeout: 10000
+- tapOn: Instrumento ARS
+- assertNotVisible: Enviar orden

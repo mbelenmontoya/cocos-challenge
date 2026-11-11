@@ -1,0 +1,11 @@
+appId: host.exp.Exponent
+---
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED. Confirmada por historial."
+    timeout: 20000
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000
+- assertNotVisible: "Orden #\\d+: FILLED. Confirmada por historial."

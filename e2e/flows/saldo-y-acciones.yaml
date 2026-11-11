@@ -1,0 +1,56 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento DYCA
+- tapOn: Cantidad de acciones
+- inputText: "100000"
+- extendedWaitUntil:
+    visible: "Saldo insuficiente: la orden cuesta .* y tenés .* disponibles."
+    timeout: 15000
+- tapOn: Enviar orden
+- tapOn: Monto en pesos
+- tapOn: Monto a invertir
+- inputText: "2000000"
+- extendedWaitUntil:
+    visible: "Saldo insuficiente: .*"
+    timeout: 8000
+- tapOn: Enviar orden
+- tapOn: Acciones
+- tapOn: Vender
+- tapOn: Cantidad de acciones
+- inputText: "1"
+- extendedWaitUntil:
+    visible: "Tenés 0 acciones disponibles para vender."
+    timeout: 8000
+- tapOn: Enviar orden
+- tapOn: Comprar
+- tapOn: Cantidad de acciones
+- eraseText: 10
+- inputText: "2"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000
+- tapOn: Vender
+- tapOn: Cantidad de acciones
+- eraseText: 10
+- inputText: "3"
+- extendedWaitUntil:
+    visible: "Tenés 2 acciones disponibles para vender."
+    timeout: 15000
+- tapOn: Enviar orden
+- tapOn: Cantidad de acciones
+- eraseText: 10
+- inputText: "2"
+- assertNotVisible: "Tenés .* para vender."
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000

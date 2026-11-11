@@ -1,0 +1,38 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento MOLA
+- tapOn: Vender
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "1"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Tenés 0 acciones disponibles para vender."
+    timeout: 20000
+- tapOn: Cerrar
+- tapOn: Instrumento DYCA
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "1"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000
+- tapOn: Cerrar
+- tapOn: Instrumento DYCA
+- tapOn: Vender
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "1"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000

@@ -269,3 +269,44 @@ it('avisa a quien escucha cada cambio de estado', async () => {
 
   expect(seen).toEqual(['sending', 'created']);
 });
+
+it('pasa por verificando mientras reconcilia un resultado incierto', async () => {
+  postMode = 'create-then-503';
+  const submitter = newSubmitter();
+  const seen: string[] = [];
+  submitter.subscribe(() => seen.push(submitter.getState().kind));
+
+  await submitter.submit(market);
+
+  expect(seen).toEqual(['sending', 'checking', 'created']);
+});
+
+it('deja de avisar a quien se desuscribe', async () => {
+  const submitter = newSubmitter();
+  const seen: string[] = [];
+  const unsubscribe = submitter.subscribe(() => seen.push(submitter.getState().kind));
+  unsubscribe();
+
+  await submitter.submit(market);
+
+  expect(seen).toEqual([]);
+});
+
+it('dismiss limpia el resultado, pero no mientras hay un envío en curso', async () => {
+  postMode = 'create-then-hang';
+  const submitter = newSubmitter();
+  const reachedSending = new Promise<void>((resolve) => {
+    const unsubscribe = submitter.subscribe(() => {
+      if (submitter.getState().kind === 'sending') { unsubscribe(); resolve(); }
+    });
+  });
+  const sending = submitter.submit(market);
+  await reachedSending;
+  submitter.dismiss();
+  expect(submitter.getState()).toEqual({ kind: 'sending' });
+
+  await sending;
+  expect(submitter.getState().kind).toBe('created');
+  submitter.dismiss();
+  expect(submitter.getState()).toEqual({ kind: 'idle' });
+});

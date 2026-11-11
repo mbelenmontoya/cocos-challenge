@@ -1,0 +1,58 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento DYCA
+- tapOn: Monto en pesos
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Ingresá un monto válido, con hasta 2 decimales."
+    timeout: 8000
+- tapOn: Monto a invertir
+- eraseText: 20
+- inputText: "45,71"
+- extendedWaitUntil:
+    visible: "El monto no alcanza para una acción."
+    timeout: 8000
+- tapOn: Enviar orden
+- assertNotVisible: "Orden #.*"
+- tapOn: Monto a invertir
+- eraseText: 20
+- inputText: "45,72"
+- extendedWaitUntil:
+    visible: "Se enviará 1 acción"
+    timeout: 8000
+- tapOn: Monto a invertir
+- eraseText: 20
+- inputText: "10,999"
+- extendedWaitUntil:
+    visible: "Ingresá un monto válido, con hasta 2 decimales."
+    timeout: 8000
+- tapOn: Monto a invertir
+- eraseText: 20
+- inputText: "1.234"
+- extendedWaitUntil:
+    visible: "Ingresá un monto válido, con hasta 2 decimales."
+    timeout: 8000
+- tapOn: Monto a invertir
+- eraseText: 20
+- inputText: "0"
+- extendedWaitUntil:
+    visible: "Ingresá un monto válido, con hasta 2 decimales."
+    timeout: 8000
+- tapOn: Monto a invertir
+- eraseText: 20
+- inputText: "91.44"
+- extendedWaitUntil:
+    visible: "Se enviarán 2 acciones"
+    timeout: 8000
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "Orden #\\d+: FILLED"
+    timeout: 20000

@@ -54,6 +54,9 @@ npm test -- --runInBand
 npm run test:api
 npm run typecheck
 npm run lint
+npm run test:coverage
+npm run test:mutation
+npm run test:e2e
 ```
 
 `npm test` ejecuta las pruebas locales sin depender de Cocos:
@@ -64,14 +67,19 @@ npm run lint
 - **Cantidad por monto:** la cuenta de acciones se compara con una regla que define el resultado correcto (`cantidad * precio` no supera el monto y una acción más sí lo supera) en todos los precios de 0,01 a 97,56, más montos y precios inválidos de todo tipo.
 - **Saldo y acciones disponibles:** compra MARKET contra el último precio y LIMIT contra el precio límite, venta contra la tenencia, el límite exacto de un centavo, y los casos en que falta un dato y decide el servidor.
 - **Envío de órdenes:** HTTP real en loopback para el cuerpo exacto, el rechazo 400 con su mensaje, y el resultado incierto ante 503, 408, timeout, conexión cortada o respuesta ilegible, siempre con un solo POST. También cubre dos envíos en el mismo instante, la intención guardada antes del POST, la reconciliación con el historial (orden encontrada, no creada, órdenes previas iguales y órdenes ajenas) y la reapertura con una intención pendiente.
+- **Pantalla:** con React Native Testing Library, el modal de órdenes y la fila de Mercado se prueban por rol y etiqueta accesible, como los usa una persona: cálculo por monto, campo vacío al cambiar de modo, precio solo en `LIMIT`, avisos de saldo y acciones, botón desactivado durante el envío y el mensaje de cada resultado. Solo se reemplaza la red.
 
-`npm run test:api` ejecuta por separado una lectura de `/instruments` contra Cocos con bugs off. No fija precios ni cantidad de instrumentos, no envía órdenes ni reinicia cuentas. Una caída o cambio incompatible del servidor hace fallar esa comprobación; no se transforma en éxito. El contrato externo está excluido de `npm test`.
+`npm run test:api` ejecuta por separado los contratos contra Cocos con bugs off: la lectura de `/instruments`, y una compra real con una cuenta descartable que se reinicia al terminar, comprobando el historial, la tenencia, el efectivo descontado y el rechazo por saldo. No fija precios. Una caída o cambio incompatible del servidor hace fallar esa comprobación; no se transforma en éxito. Los contratos están excluidos de `npm test`.
 
-Las pruebas locales cubren cálculos/interpretación y solicitudes HTTP reales contra un servidor local. No prueban el adaptador nativo de iOS. Las expectativas correctas se conservan cuando descubren un error; se corrige producción. Se comprobó que un divisor incorrecto y un timeout desactivado hacen fallar las pruebas correspondientes sin cambiar sus expectativas.
+`npm run test:coverage` muestra la cobertura de la suite local como diagnóstico, sin umbral. La lógica de dinero y de envío está cubierta casi por completo; las pantallas de Mercado y Portfolio quedan para los flujos de punta a punta.
 
-Se comprobó además que romper a propósito el bloqueo, el guardado previo al POST o cualquier campo de la comparación con el historial hace fallar las pruebas de envío.
+`npm run test:mutation` corre [Stryker](https://stryker-mutator.io) sobre los módulos de dinero y envío: modifica el código a propósito y verifica que algún test falle. Resultado medido el 2026-11-11: 94,95 % (282 de 297 mutantes detectados). Los 15 restantes no cambian el comportamiento observable, por ejemplo un chequeo de `null` que la conversión a centavos ya cubre. El reporte queda en `reports/mutation/index.html`.
 
-Aviso conocido del tooling (2026-11-11): `npm audit` reporta 29 avisos (1 bajo y 28 moderados), sin altos ni críticos, en el árbol de herramientas de Expo, ESLint y Jest. Las correcciones propuestas incluyen versiones incompatibles/downgrades; no se aplica `--force`.
+`npm run test:e2e` corre los flujos de [Maestro](https://docs.maestro.dev) en el simulador iOS con la API real a través de un proxy local que fuerza timeouts, errores y respuestas ilegibles: doble toque, timeout, resultado incierto, cierre de la app con una orden en camino, validaciones y la fila de pesos. Requisitos y detalle en [`e2e/README.md`](e2e/README.md).
+
+Las pruebas locales cubren cálculos/interpretación, solicitudes HTTP reales contra un servidor local y la pantalla de órdenes. No prueban el adaptador nativo de iOS; eso lo cubren los flujos de punta a punta. Las expectativas correctas se conservan cuando descubren un error; se corrige producción. Se comprobó que un divisor incorrecto y un timeout desactivado hacen fallar las pruebas correspondientes sin cambiar sus expectativas.
+
+Aviso conocido del tooling (2026-11-11): `npm audit` reporta 33 avisos (1 bajo y 32 moderados), sin altos ni críticos, en el árbol de herramientas de Expo, ESLint, Jest y Stryker. Las correcciones propuestas incluyen versiones incompatibles/downgrades; no se aplica `--force`.
 
 ## Modos de fallas de la API
 

@@ -28,6 +28,9 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/jest-runner": "^10.1.1",
+    "@testing-library/react-native": "^14.1.0",
     "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
     "eslint": "^9.39.5",
@@ -43,8 +46,11 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "jest --testPathIgnorePatterns=market.contract.test.ts",
-    "test:api": "jest --runInBand --runTestsByPath src/features/markets/__tests__/market.contract.test.ts"
+    "test": "jest --testPathIgnorePatterns=contract.test.ts",
+    "test:api": "jest --runInBand --runTestsByPath src/features/markets/__tests__/market.contract.test.ts src/__tests__/account.contract.test.ts",
+    "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=contract.test.ts --collectCoverageFrom='src/**/*.{ts,tsx}' --collectCoverageFrom='!src/**/*.test.{ts,tsx}' --collectCoverageFrom='!src/testing/**'",
+    "test:mutation": "stryker run",
+    "test:e2e": "bash e2e/run.sh"
   },
   "jest": {
     "preset": "jest-expo",

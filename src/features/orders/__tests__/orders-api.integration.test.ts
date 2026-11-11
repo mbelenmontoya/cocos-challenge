@@ -110,3 +110,13 @@ it('un historial con una orden ilegible es un error', async () => {
 
   await expect(getOrders()).rejects.toMatchObject({ code: 'invalid_response' });
 });
+
+it.each([
+  ['un 500', reply(500, { error: 'boom' })],
+  ['un 302 sin destino', reply(302, '')],
+])('%s tampoco es un rechazo seguro', async (_name, listener) => {
+  handler = listener;
+
+  await expect(postOrder({ instrument_id: 1, side: 'BUY', type: 'MARKET', quantity: 1 })).resolves.toEqual({ kind: 'uncertain' });
+  expect(requests).toHaveLength(1);
+});

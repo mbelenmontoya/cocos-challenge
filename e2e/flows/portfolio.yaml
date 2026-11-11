@@ -1,0 +1,15 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn:
+    text: "Portfolio, tab, 2 of 2"
+- extendedWaitUntil:
+    visible: "DYCA"
+    timeout: 15000

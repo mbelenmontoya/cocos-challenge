@@ -1,0 +1,18 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    appId: host.exp.Exponent
+    stopApp: true
+- openLink:
+    link: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: Instrumento DYCA
+    timeout: 180000
+- tapOn: Instrumento DYCA
+- tapOn: Cantidad de acciones
+- eraseText: 20
+- inputText: "1"
+- tapOn: Enviar orden
+- extendedWaitUntil:
+    visible: "No pudimos preparar la orden. No se envió."
+    timeout: 20000

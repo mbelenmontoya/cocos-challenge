@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "jest",
+  "jest": {
+    "projectType": "custom",
+    "configFile": "package.json",
+    "enableFindRelatedTests": true,
+    "config": {
+      "testPathIgnorePatterns": [
+        "/node_modules/",
+        "contract\\.test\\.ts"
+      ]
+    }
+  },
+  "coverageAnalysis": "off",
+  "mutate": [
+    "src/features/orders/utils/order-quantity.ts",
+    "src/features/orders/utils/order-submitter.ts",
+    "src/features/orders/utils/availability.ts",
+    "src/features/orders/api/orders-api.ts",
+    "src/features/portfolio/utils/holding-metrics.ts",
+    "src/features/markets/utils/calculate-return.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "progress",
+    "html"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "concurrency": 4,
+  "timeoutMS": 20000,
+  "cleanTempDir": "always"
+}
