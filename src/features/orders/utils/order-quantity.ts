@@ -24,6 +24,12 @@ export function maxSharesForAmount(amountText: string, lastPrice: number | null)
   return shares > 0 ? { status: 'ok', shares } : { status: 'insufficient' };
 }
 
+/** Parses a LIMIT price in pesos with up to two decimals, or returns null when it is not above zero. */
+export function parseLimitPrice(text: string): number | null {
+  const cents = toCents(text.trim());
+  return cents ? cents / 100 : null;
+}
+
 /** Parses an exact share count, or returns null when it is not a positive whole number. */
 export function parseExactShares(text: string): number | null {
   const trimmed = text.trim();

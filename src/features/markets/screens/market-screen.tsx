@@ -6,13 +6,18 @@ import { Screen } from '@/components/screen';
 import { InstrumentRow } from '../components/instrument-row';
 import { SearchField } from '../components/search-field';
 import { useMarket } from '../hooks/use-market';
-import type { Market } from '../types/instrument';
+import type { Instrument, Market } from '../types/instrument';
 
 const getNotice = ({ incomplete, omitted }: Market) => (incomplete > 0 || omitted > 0
   ? `Información incompleta: ${incomplete} instrumentos con datos no disponibles. ${omitted} registros no pudieron mostrarse.`
   : null);
 
-export function MarketScreen() {
+type MarketScreenProps = {
+  onSelectInstrument?: (instrument: Instrument) => void;
+  canSelect?: (instrument: Instrument) => boolean;
+};
+
+export function MarketScreen({ onSelectInstrument, canSelect = () => true }: MarketScreenProps) {
   const [query, setQuery] = useState('');
   const market = useMarket(query);
 
@@ -22,7 +27,9 @@ export function MarketScreen() {
         query={market}
         items={market.data?.instruments}
         keyExtractor={(item) => String(item.id)}
-        renderItem={(item) => <InstrumentRow instrument={item} />}
+        renderItem={(item) => (
+          <InstrumentRow instrument={item} onPress={onSelectInstrument && canSelect(item) ? () => onSelectInstrument(item) : undefined} />
+        )}
         emptyMessage={query ? `No encontramos instrumentos para ${query}.` : 'No hay instrumentos disponibles.'}
         loadingMessage="Cargando instrumentos…"
         listLabel="Lista de instrumentos"

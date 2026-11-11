@@ -1,4 +1,4 @@
-import { maxSharesForAmount, parseExactShares } from './order-quantity';
+import { maxSharesForAmount, parseExactShares, parseLimitPrice } from './order-quantity';
 
 const ok = (shares: number) => ({ status: 'ok', shares });
 const centsToText = (cents: number) => `${Math.floor(cents / 100)},${String(cents % 100).padStart(2, '0')}`;
@@ -62,6 +62,15 @@ it('valida una cantidad exacta de acciones', () => {
 
 it.each(['', '0', '00', '-1', '+1', '1,5', '1.5', '1 0', '1e3', '0x10', 'abc', '１２', '9007199254740992'])('rechaza la cantidad %j', (text) => {
   expect(parseExactShares(text)).toBeNull();
+});
+
+it('lee el precio limit con hasta dos decimales', () => {
+  expect(parseLimitPrice('84,5')).toBe(84.5);
+  expect(parseLimitPrice(' 0.01 ')).toBe(0.01);
+});
+
+it.each(['', '0', '0,00', '-1', '1,555', 'abc'])('rechaza el precio limit %j', (text) => {
+  expect(parseLimitPrice(text)).toBeNull();
 });
 
 it('ignora los espacios alrededor de lo que escribe el usuario', () => {
