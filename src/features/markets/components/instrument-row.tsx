@@ -18,7 +18,7 @@ export function InstrumentRow({ instrument, onPress }: InstrumentRowProps) {
       </View>
       <View style={styles.values}>
         <Text style={styles.price}>{formatCurrency(instrument.last_price)}</Text>
-        <ChangeText value={calculateReturn(instrument)} />
+        <ChangeText label="Retorno" value={calculateReturn(instrument)} />
       </View>
     </>
   );

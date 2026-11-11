@@ -17,7 +17,7 @@ export function HoldingRow({ holding }: { holding: Holding }) {
       <View style={styles.values}>
         <Text style={styles.value}>{formatCurrency(marketValue(holding))}</Text>
         <Text style={styles.detail}>Ganancia: {formatCurrency(gain(holding))}</Text>
-        <ChangeText value={returnPercent(holding)} />
+        <ChangeText label="Rendimiento" value={returnPercent(holding)} />
       </View>
     </View>
   );

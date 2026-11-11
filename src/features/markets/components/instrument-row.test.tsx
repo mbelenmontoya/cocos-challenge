@@ -21,3 +21,9 @@ it('una fila sin acción no se anuncia como botón', async () => {
   expect(screen.getByLabelText('Instrumento ARS')).toBeOnTheScreen();
   expect(screen.queryByRole('button')).not.toBeOnTheScreen();
 });
+
+it('muestra el retorno con su etiqueta', async () => {
+  await render(<InstrumentRow instrument={dyca} />);
+
+  expect(screen.getByText('Retorno: −8,69 %')).toBeOnTheScreen();
+});
